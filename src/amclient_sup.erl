@@ -34,7 +34,12 @@ init([]) ->
     ChildSpecs = [
         #{
             id => amclient_client,
-            start => {amclient_client, start_link, [amclient_client]},
+            start => {amclient_client_sup, start_link, []},
+            type => supervisor
+        },
+        #{
+            id => amclient_run_coordinator,
+            start => {amclient_run_coordinator, start_link, [amclient_run_coordinator]},
             type => worker
         }
     ],
