@@ -185,7 +185,7 @@ wait_for_credit(Sender) ->
         {amqp10_event, {link, Sender, credited}} ->
             ?LOG("Sender credited~n", []),
             ok
-    after 30000 ->
+    after 60000 ->
         exit(credited_timeout)
     end.
 
