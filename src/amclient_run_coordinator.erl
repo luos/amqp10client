@@ -33,7 +33,7 @@ handle_cast(_Msg, State) ->
 
 handle_info(init, State) ->
     NumSenders = amclient_config:number_of_publishers(1),
-    NumReceivers = amclient_config:number_of_consumers(1),
+    NumReceivers = amclient_config:number_of_consumers(0),
     Senders = [
         begin
             {ok, P} = amclient_client:start(N),
