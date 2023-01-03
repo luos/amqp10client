@@ -52,14 +52,17 @@ handle_info(init_sender, State) ->
     {ok, Connection} = amqp10_client:open_connection(OpnConf),
     {ok, Session} = amqp10_client:begin_session(Connection),
 
+    MessageSettle = amclient_config:message_settlement_on_publish(unsettled),
+    EndpointDurability = amclient_config:endpoint_durability(),
+    ?LOG("[~s] Attaching sender link (settle: ~p, durability: ~p)", [LinkName, MessageSettle, EndpointDurability]),
     QName = <<"hello">>,
     Address = <<"/amq/queue/", QName/binary>>,
     {ok, Sender} = amqp10_client:attach_sender_link(
         Session,
         LinkName,
         Address,
-        amclient_config:message_settlement_on_publish(unsettled),
-        amclient_config:endpoint_durability()
+        MessageSettle,
+        EndpointDurability
     ),
 
     wait_for_credit(Sender),
