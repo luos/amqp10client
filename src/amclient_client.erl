@@ -270,7 +270,7 @@ receive_message(Receiver, Acc, N) ->
         {amqp10_msg, Receiver, Msg} ->
             amqp10_client:accept_msg(Receiver, Msg),
             receive_message(Receiver, [Msg | Acc], N -1)
-    after 10000 ->
+    after 30000 ->
         lists:reverse(Acc)
     end.
     
