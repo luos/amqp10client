@@ -146,7 +146,7 @@ handle_info(
         Session,
         LinkName,
         Address,
-        unsettled,
+        amclient_config:message_settlement_on_publish(unsettled),
         configuration
     ),
     

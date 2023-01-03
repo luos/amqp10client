@@ -7,7 +7,8 @@
     username/0,
     password/0,
     number_of_consumers/1,
-    number_of_publishers/1
+    number_of_publishers/1,
+    message_settlement_on_publish/1
 ]).
 
 -spec hosts() -> [string()].
@@ -32,6 +33,13 @@ number_of_consumers(Default) ->
 
 message_size(Default) ->
     os_env_int("MESSAGE_SIZE", Default).
+
+message_settlement_on_publish(Default) ->
+    case os:getenv("MESSAGE_SETTLEMENT_ON_PUBLISH", undefined) of
+        undefined -> Default;
+        "settled" -> settled;
+        "unsettled" -> unsettled
+    end.
 
 os_env_int(Name, Default) ->
     case os:getenv(Name, undefined) of
