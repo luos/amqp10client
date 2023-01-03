@@ -39,7 +39,8 @@ message_settlement_on_publish(Default) ->
     case os:getenv("MESSAGE_SETTLEMENT_ON_PUBLISH", undefined) of
         undefined -> Default;
         "settled" -> settled;
-        "unsettled" -> unsettled
+        "unsettled" -> unsettled;
+        "mixed" -> mixed
     end.
 
 endpoint_durability() ->
