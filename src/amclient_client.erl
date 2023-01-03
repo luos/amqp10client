@@ -58,8 +58,8 @@ handle_info(init_sender, State) ->
         Session,
         LinkName,
         Address,
-        unsettled,
-        configuration
+        amclient_config:message_settlement_on_publish(unsettled),
+        amclient_config:endpoint_durability()
     ),
 
     wait_for_credit(Sender),

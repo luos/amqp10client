@@ -8,7 +8,8 @@
     password/0,
     number_of_consumers/1,
     number_of_publishers/1,
-    message_settlement_on_publish/1
+    message_settlement_on_publish/1,
+    endpoint_durability/0
 ]).
 
 -spec hosts() -> [string()].
@@ -39,6 +40,17 @@ message_settlement_on_publish(Default) ->
         undefined -> Default;
         "settled" -> settled;
         "unsettled" -> unsettled
+    end.
+
+endpoint_durability() ->
+    case os:getenv("ENDPOINT_DURABILITY", undefined) of
+        undefined -> case message_settlement_on_publish(unsettled) of
+                        settled -> none;
+                        unsettled -> configuration
+                    end;
+        "none" -> none;
+        "configuration" -> configuration;
+        "unspecified" -> unspecified
     end.
 
 os_env_int(Name, Default) ->
