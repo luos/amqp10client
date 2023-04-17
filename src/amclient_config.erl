@@ -9,7 +9,8 @@
     number_of_consumers/1,
     number_of_publishers/1,
     message_settlement_on_publish/1,
-    endpoint_durability/0
+    endpoint_durability/0,
+    output_file/0
 ]).
 
 -spec hosts() -> [string()].
@@ -58,4 +59,10 @@ os_env_int(Name, Default) ->
     case os:getenv(Name, undefined) of
         undefined -> Default;
         Str -> list_to_integer(Str)
+    end.
+
+output_file() ->
+    case os:getenv("AMCLIENT_OUT_FILE", undefined) of
+        undefined -> "test.out";
+        File -> File
     end.

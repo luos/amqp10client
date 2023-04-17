@@ -6,7 +6,7 @@
 -export([start/1, stop/1, start_link/1]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2]).
 -record(state, {connection, session, run}).
--record(state_sender, {sender, number_of_messages, link_name}).
+-record(state_sender, {sender, number_of_messages, link_name, settle_mode}).
 -record(state_receiver, {receiver, number_of_messages, link_name}).
 start(N) ->
     amclient_client_sup:start_child(N).
@@ -73,7 +73,8 @@ handle_info(init_sender, State) ->
         run = #state_sender{
             sender = Sender,
             link_name = LinkName,
-            number_of_messages = NumberOfMessages
+            number_of_messages = NumberOfMessages,
+            settle_mode = MessageSettle
         }
     }};
 handle_info(init_receiver, State) ->
@@ -111,27 +112,40 @@ handle_info(
         run = #state_sender{
             sender = Sender,
             number_of_messages = NumberOfMessages,
-            link_name = LinkName
+            link_name = LinkName,
+            settle_mode = SettleMode
         }
     } = State
 ) ->
     MessageSize = amclient_config:message_size(1),
     Message = crypto:strong_rand_bytes(MessageSize),
-    ?LOG("[~p] Test started: ~p. Publishing ~p messages. ~n", [
-        LinkName, calendar:system_time_to_rfc3339(erlang:system_time(second)), NumberOfMessages
+    ?LOG("[~p] Test started: ~p. Publishing ~p messages, settle: ~p. ~n", [
+        LinkName, calendar:system_time_to_rfc3339(erlang:system_time(second)), NumberOfMessages,
+        SettleMode
     ]),
+    WaitForAccept = SettleMode =/= settled,
+    SettleOnSend = SettleMode  =/= unsettled,
     {Elapsed, _} = timer:tc(fun() ->
         lists:foreach(
             fun(N) ->
-                send_message(Sender, false, N, Message)
+                send_message(Sender, SettleOnSend, N, Message)
             end,
             lists:seq(0, NumberOfMessages - 1)
         ),
-        wait_for_accepts(NumberOfMessages)
+        case WaitForAccept of
+            true ->
+                wait_for_accepts(NumberOfMessages);
+            false ->
+                ok
+        end
     end),
     ?LOG("Test ended: ~p~n", [calendar:system_time_to_rfc3339(erlang:system_time(second))]),
     MsgsPerSec = NumberOfMessages / (Elapsed / 1000 / 1000),
     ?LOG("Test ended, took: ~p milliseconds. ~p messages / second. ~n", [Elapsed / 1000, MsgsPerSec]),
+    OutFile = amclient_config:output_file(),
+    ?LOG("Writing results to ~p~n", [OutFile]),
+    ok = file:write_file(OutFile, io_lib:format("~p~n", [MsgsPerSec])),
+    init:stop(),
     {noreply, State};
 handle_info(
     run_receiver,
@@ -166,6 +180,7 @@ handle_info(
     ?LOG("Received ~p messages", [length(Msgs)]),
     MsgsPerSec = NumberOfMessages / (Elapsed / 1000 / 1000),
     ?LOG("Test ended, took: ~p milliseconds. ~p messages / second. ~n", [Elapsed / 1000, MsgsPerSec]),
+    erlang:halt(),
     {noreply, State};
 handle_info({amqp10_msg, Receiver, InMsg}, State) ->
     %io:format("."),
@@ -241,7 +256,7 @@ wait_for_accepts(N) ->
     receive
         {amqp10_disposition, {accepted, _}} -> wait_for_accepts(N - 1)
     after 10000 ->
-        exit(io_lib:format("Accept not received: ~p", [N]))
+        exit(lists:flatten(io_lib:format("Accept not received: ~p", [N])))
     end.
 
 drain_queue(Session, Address) ->
