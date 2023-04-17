@@ -134,8 +134,10 @@ handle_info(
         ),
         case WaitForAccept of
             true ->
+                ?LOG("Waiting for accepts...", []),
                 wait_for_accepts(NumberOfMessages);
             false ->
+                ?LOG("Not waiting for accepts...", []),
                 ok
         end
     end),
@@ -204,8 +206,22 @@ wait_for_credit(Sender) ->
         {amqp10_event, {link, Sender, credited}} ->
             ?LOG("Sender credited~n", []),
             ok
-    after 60000 ->
+    after 5000 ->
+        flush_known(#{}),
         exit(credited_timeout)
+    end.
+
+flush_known(Acc) ->
+    receive
+        {amqp10_disposition, {accepted, _}} ->
+            Acc2 = maps:update_with(accepted, fun(X) -> X + 1 end, 0, Acc),
+            flush_known(Acc2);
+        Other ->
+            ?LOG("Received: ~p", [Other]),
+            Acc2 = maps:update_with(other, fun(X) -> X + 1 end, 0, Acc),
+            flush_known(Acc2)
+    after 1000 ->
+        ?LOG("Flush end: ~p", [Acc])
     end.
 
 flush(N) ->
