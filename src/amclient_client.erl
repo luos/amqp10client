@@ -141,10 +141,11 @@ handle_info(
     end),
     ?LOG("Test ended: ~p~n", [calendar:system_time_to_rfc3339(erlang:system_time(second))]),
     MsgsPerSec = NumberOfMessages / (Elapsed / 1000 / 1000),
-    ?LOG("Test ended, took: ~p milliseconds. ~p messages / second. ~n", [Elapsed / 1000, MsgsPerSec]),
+    MsgsPerSecInt = erlang:trunc(MsgsPerSec),
+    ?LOG("Test ended, took: ~p milliseconds. ~p messages / second. ~n", [Elapsed / 1000, MsgsPerSecInt]),
     OutFile = amclient_config:output_file(),
     ?LOG("Writing results to ~p~n", [OutFile]),
-    ok = file:write_file(OutFile, io_lib:format("~p~n", [MsgsPerSec])),
+    ok = file:write_file(OutFile, io_lib:format("~p~n", [MsgsPerSecInt])),
     init:stop(),
     {noreply, State};
 handle_info(
